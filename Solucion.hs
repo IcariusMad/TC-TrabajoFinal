@@ -3,7 +3,7 @@
 
 module Solucion where
 
--- 1.1 Representaci´on de dominios y soluciones
+-- 1.1 Representación de dominios y soluciones
 
 -- lista exterior -> conjunciones
 -- lista interior -> clausulas
@@ -35,7 +35,34 @@ type V = Int
 -- 1.2 Verificadores en tiempo polinomial
 
 verifyA :: (DomA, SolA) -> Bool
-verifyA (lc, s) = foldr (\c->) True lc
+verifyA (lc, s) = foldr (\c b -> or (assignI c s) && b) True lc
+
+assignI :: [(String, Bool)] -> SolA -> [Bool]
+assignI ll i = map (\(s,b) -> case lookup s i of {
+                                    Nothing -> error "La variable no está en la interpretación";
+                                    Just x -> x == b  -- representamos en el dominio que una variable acompañado de true significa representación directa
+}) ll
+
+-- tests
+formSat1 :: DomA
+formSat1 = [[("x1", True), ("x2", False), ("x3", True)],
+            [("x1", False), ("x2", True), ("x3", True)],
+            [("x2", True), ("x3", True)]]
+
+formInsat2 :: DomA
+formInsat2 = [[("x1", True)],
+              [("x2", True), ("x3", True)],
+              [("x1", False)]]
+
+interpretacion1 :: SolA
+interpretacion1 = [("x1", True), ("x2", False), ("x3", True)]
+-- true
+testVerifyA1 :: Bool
+testVerifyA1 = verifyA (formSat1, interpretacion1)
+
+-- false
+testVerifyA2 :: Bool
+testVerifyA2 = verifyA (formInsat2, interpretacion1)
 
 verifyB :: (DomB, SolB) -> Bool
 verifyB (d, s) = undefined
