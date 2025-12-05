@@ -66,3 +66,6 @@ testVerifyA2 = verifyA (formInsat2, interpretacion1)
 
 verifyB :: (DomB, SolB) -> Bool
 verifyB (d, s) = undefined
+
+pathDistance :: (DomB, SolB) -> Int
+pathDistance (_, d, r, E, B, M, V) = 
