@@ -180,3 +180,24 @@ testSolveB2 :: SolB
 testSolveB2 = solveB domB2
 
 -- 1.4 Reducción polinomial entre problemas
+reduceAToB :: DomA -> DomB
+reduceAToB = undefined
+-- La estrategia consiste en pasar mediante reducciones conocidas desde SAT hasta TSP, y la reducción de TSP a B la hacemos nosotros
+-- Para demostrar que TSP es reducible a B, tenemos que encontrar una función f que para todo instancia de TSP que decida True, corresponda a una instancia de B que decida True.
+-- De la misma forma, f debe corresponder a toda instancia de TSP que decida False, una de B que decida False.
+-- El dominio de TSP, es un grafo completo no dirigido G con V vértices, donde cada arista le corresponde un costo, además se proporciona un valor M y el predicado es existe un camino
+-- Hamilitonino tal que la suma del costo de las aristas es menor o igual a M. Podemos mapear M al mismo valor M (como límite de distancia) en el problema B. Los vértices V corresponden
+-- los puntos de control P, y le sumamos la base como otro vértice del grafo para el problema B, y unimos todos los puntos de control con la base para hacer al grafo completo. El costo
+-- de todas estas es aristas es 0, para no afectar los resultados provenientes de TSP. Para las prioridades de cada punto, y el valor mínimo de prioridad tomamos el valor trivial 0.
+-- Para las exclusiones de pares tomamos el valor trivial conjunto vacío. De esta forma, podemos observar que cualquier solución del TSP es tambén
+-- una solución de B, y que si TSP no tiene solución, B tampoco la tendrá ya que la condición de encontrar un camino que no supere el valor M no se cumple.
+-- Es fácil demostrar que la función f es polinómica, porque un grafo se puede representar como una matriz v*v, y el costo de copiarla, tomando la cantidad de vértices V es V². Luego
+-- agregar la base y todas las aristas (una por cada vértice), así como definir las prioridades de cada punto en 0 es de costo V, por lo que V² + V es V². Las otras operaciones
+-- se realizan en costo 1. Por lo tanto f es polinómica.
+-- Al encontrar una función f que permite mapear el TSP a B en tiempo polinomial, conservando los valores de verdad para cada instancia, nos permite afirmar que reducimos el problema TSP
+-- a B. Como ya sabemos que TSP es NP-Completo, por reducirse desde SAT (gracias a Cook-Levin), podemos afirmar que el problema B es NP-Completo.
+-- La estrategia para llegar desde SAT a TSP es: SAT -> 3-CNF-SAT -> CLIQUE -> VERTEX-COVER -> HC -> TSP.`
+
+
+
+
