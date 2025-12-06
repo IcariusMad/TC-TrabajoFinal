@@ -196,8 +196,12 @@ reduceAToB = undefined
 -- se realizan en costo 1. Por lo tanto f es polinómica.
 -- Al encontrar una función f que permite mapear el TSP a B en tiempo polinomial, conservando los valores de verdad para cada instancia, nos permite afirmar que reducimos el problema TSP
 -- a B. Como ya sabemos que TSP es NP-Completo, por reducirse desde SAT (gracias a Cook-Levin), podemos afirmar que el problema B es NP-Completo.
--- La estrategia para llegar desde SAT a TSP es: SAT -> 3-CNF-SAT -> CLIQUE -> VERTEX-COVER -> HC -> TSP.`
+-- La estrategia para llegar desde SAT a TSP es: SAT -> 3-SAT -> CLIQUE -> VERTEX-COVER -> HC -> TSP.`
 
-
-
+-- SAT    (x1 ∨ ¬x2 ∨ x3) ∧ (¬x1 ∨ x2 ∨ x3) ∧ (x2 ∨ x3)
+-- 3-SAT  (x1 ∨ ¬x2 ∨ x3) ∧ (¬x1 ∨ x2 ∨ x3) ∧ (x2 ∨ x3 ∨ x4) ∧ (x2 ∨ x3 ∨ ¬x4)
+-- CLIQUE 
+-- VERTEX-COVER
+-- HC
+-- TSP
 

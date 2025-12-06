@@ -1,0 +1,69 @@
+def VERIFY (clausulas, valuacion) return res {
+    -- O(1)
+    def asignLit(vl, vv) return res {
+        case vl of [
+            False[] -> case vv of [
+                False[] -> res := True[],
+                True[]  -> res := False[]
+            ],
+            True[] -> case vv of [
+                False[] -> res := False[],
+                True[]  -> res := True[]
+            ]
+        ]
+    }
+    -- O(n) n=a
+    def iguales (a, b) return res {
+        while a is [
+            S[x] -> case b of [
+                S[y] -> {a, b := x, y},
+                O[]  -> a, b := O[], a
+            ]
+        ]
+        case b of [
+            S[x] -> res := False[],
+            O[]  -> res := True[]
+        ]
+    }
+    -- O(n) n=cantidad variables * valor lieral
+    def evalLit (l, valuacion) return res {
+        case l of [
+            Lit[x, b] -> {
+                while valuacion is [
+                    [v, vs] -> case v of [
+                        Valu[y, bv] -> {
+                            iguales(x, y) on eq;
+                            case eq of [
+                                False[] -> valuacion := vs,
+                                True[]  -> { 
+                                    valuacion := [][];
+                                    asignLit(b, bv) on res 
+                                }
+                            ]
+                        }
+                    ]
+                ]
+            }
+        ]
+    }
+    -- O(n*m) n=|clausulas| m=|variables|²
+    res := True[];
+    while clausulas is [
+        [c, cs] -> {
+            clauSat := False[];
+            while c is [
+                [l, ls] -> {
+                    evalLit(l, valuacion) on eval;
+                    case eval of [
+                        False[] -> c := ls,
+                        True[]  -> clauSat, c := True[], [][]
+                    ]
+                }
+            ];
+            case clauSat of [
+                False[] -> { clausulas, res := [][], False[] },
+                True[]  -> clausulas := cs
+            ]
+        }
+    ]
+}
