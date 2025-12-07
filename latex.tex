@@ -1,0 +1,704 @@
+\documentclass[conference]{IEEEtran}
+%\IEEEoverridecommandlockouts
+% The preceding line is only needed to identify funding in the first footnote. If that is unneeded, please comment it out.
+
+%Packages
+\usepackage{cite}
+\usepackage{amsmath,amssymb,amsfonts}
+\usepackage{algorithmic}
+\usepackage{graphicx}
+\usepackage{textcomp}
+\usepackage{xcolor}
+\usepackage[utf8]{inputenc}
+\usepackage{listings}
+\usepackage[colorlinks=true, urlcolor=black,linkcolor=black, breaklinks=true]{hyperref}
+\usepackage[normalem]{ulem}
+\usepackage{soul}
+\let\oldhref\href
+\renewcommand{\href}[2]{\oldhref{#1}{\ul{#2}}}
+\usepackage{titlesec}
+\titlespacing*{\section}{0pt}{3.5em}{1.5em}
+\titlespacing*{\subsection}{0pt}{2.5em}{1em}
+
+\hypersetup{
+    colorlinks=true,
+    linkcolor=black,
+    citecolor=black,
+    urlcolor=black
+}
+\lstset{
+  showspaces=false, 
+  showstringspaces=false,
+  showtabs=false,
+  basicstyle=\ttfamily\small, % letra más chica
+  breaklines=true,            % QUE CORTE LAS LÍNEAS
+  breakatwhitespace=true,     % si puede, corta en espacios
+  columns=fullflexible ,% que ajuste bien el ancho
+  literate=
+   {χ}{{$\chi$}}1
+   {λ}{{$\lambda$}}1
+   {σ}{{$\sigma$}}1
+   {φ}{{$\phi$}}1
+}
+
+\def\BibTeX{{\rm B\kern-.05em{\sc i\kern-.025em b}\kern-.08em
+    T\kern-.1667em\lower.7ex\hbox{E}\kern-.125emX}}
+\renewcommand{\refname}{Referencias}
+
+
+\begin{document}
+
+\title{Planificación de Rutas de Drones con Zonas de Exclusión
+\\
+{\footnotesize Tarea final de la materia Teoria de la computación $-$ Noviembre 2025}
+
+}
+
+\author{\IEEEauthorblockN{Mauricio Quintero}
+\IEEEauthorblockA{\textit{Teoría de la computación} \\
+\textit{Universidad ORT Uruguay}\\
+Montevideo, Uruguay \\
+167070}
+}
+
+\maketitle
+
+\begin{abstract}
+El objetivo de esta tarea es demostrar que un problema de planificación logística pertenece a la clase NP-Completo, mediante una reducción polinomial desde un problema clásico conocido como NP-completo (SAT).
+Se analizará un problema inventado por la cátedra de la materia.
+\end{abstract}
+
+% \begin{IEEEkeywords}
+% component, formatting, style, styling, insert
+% \end{IEEEkeywords}
+
+\section{Introducción}
+Se plantea un problema de rutas logísticas mediante drones, referido como problema \textbf{B}, y se pretende mediante una reducción desde un problema clásico de la clase NP-Completo (SAT) demostrar la pertenencia del problema \textbf{B} a la misma clase.
+
+\section{Explicación SAT}
+El problema de Satisfacibilidad Booleana (\textit{Boolean Satisfiability Problem}, SAT) consiste en determinar si existe una asignación de valores de verdad a las variables proposicionales de una fórmula booleana tal que dicha fórmula resulte verdadera.
+
+Formalmente, sea $\varphi$ una fórmula lógica construida a partir de variables booleanas, conectivos lógicos ($\neg$, $\wedge$, $\vee$) y paréntesis. El problema SAT consiste en decidir si existe una asignación $\sigma$ de valores en $\{true,false\}$ para las variables de $\varphi$ tal que $\varphi(\sigma) = True$.
+
+En el contexto de este trabajo, nos referimos a SAT como problema \textbf{A}.
+
+\section{Planificación e introducción problema de drones}
+El problema planteado para esta tarea consiste en determinar si existe una ruta factible para un dron autónomo que visite un conjunto de puntos de control, cumpliendo restricciones simultáneas de distancia, exclusión mutua entre puntos de control y prioridad total.
+
+Los valores de entrada consistirán de un conjunto finito de puntos $P$, una matriz de distancias entre puntos, una función de distancia a la base, un conjunto de pares de exclusión $E \subseteq P \times P$, una función de prioridad para cada punto, un límite máximo de distancia total $M$ y un valor mínimo requerido de prioridad $V$. La ruta debe comenzar y finalizar en la base, no superar la cota $M$, alcanzar al menos el valor total $V$ en prioridades y no visitar pares de puntos incompatibles.
+
+\section{ Verificadores y Reducción en Haskell }
+
+\subsection{ Representación de dominios y soluciones }
+
+Representamos el dominio del problema \textbf{A} como una lista de listas, donde la lista exterior representa a las cláusulas, y la lista interior a los literales dentro de cada clausula. Los literales son representados por una tupla \texttt{String}, \texttt{Bool}, donde el \texttt{string} representa el nombre del literal, y el booleano indica si aparece como representado directamente (booleano en $true$) o si aparece como la negación (booleano en $false$). 
+
+Como una solución para una fórmula LP es una interpretación que le asigna a cada variable un valor de verdad, representamos la solución como una tabla (lista) con clave el nombre de la variable y valor el valor de verdad. 
+\begin{lstlisting}[language=Haskell]
+    type DomA = [[(String, Bool)]]
+
+    type SolA = [(String, Bool)]
+\end{lstlisting}
+Para el dominio del problema \textbf{B}, optamos por manejar distintos tipos de datos para cada parte del problema. De esta forma representamos los puntos de control como un listado de puntos (representados a su vez por un valor entero), la matriz de distancias como una tabla (lista de tuplas) donde la clave es una tupla con la representación de los 2 puntos entre los que se quiere conocer la distancia. Las distancias desde cada punto de control a la base se representan como una tabla donde la clave es el punto y el valor un entero que representa la distancia. Los pares de exclusión se representan como una lista de tuplas de puntos, la existencia de una pareja de puntos en esta lista significa que no se puede avanzar entre ellos. Las prioridades que tienen los puntos se representan en una tabla con clave el punto y valor su prioridad. Por último, los valores de distancia máxima que se puede cubrir y valor de prioridad requerida se representan como enteros. 
+
+La base se representa como un punto especial de nombre 0, los demás puntos se nombran secuencialmente desde el 1 en adelante. \\
+
+Representación del dominio y sus soluciones:
+\begin{lstlisting}[language=Haskell]
+    type DomB = (Ps, D, R, E, B, M, V) 
+
+    type SolB = Ps 
+\end{lstlisting}
+Punto de control 
+\begin{lstlisting}[language=Haskell]
+    type P = Int
+\end{lstlisting}
+Puntos de control 
+\begin{lstlisting}[language=Haskell]
+    type Ps = [P] 
+\end{lstlisting}
+Distancia simétrica
+\begin{lstlisting}[language=Haskell]
+    type D = [((P, P), Int)] 
+\end{lstlisting}
+Distancias a la base 
+\begin{lstlisting}[language=Haskell]
+    type R = [(P, Int)] 
+\end{lstlisting}
+Pares de exclusión 
+\begin{lstlisting}[language=Haskell]
+    type E = [(P, P)] 
+\end{lstlisting}
+Prioridades de los puntos 
+\begin{lstlisting}[language=Haskell]
+    type B = [(P, Int)] 
+\end{lstlisting}
+Límite de distancia 
+\begin{lstlisting}[language=Haskell]
+    type M = Int 
+\end{lstlisting}
+Prioridad mínima requerida 
+\begin{lstlisting}[language=Haskell]
+    type V = Int 
+\end{lstlisting}
+
+\subsection{Verificadores en tiempo polinomial}
+
+El verificador de SAT lo que hace es recorrer todas las clausulas asignando a cada literal su valor de verdad según la solución (interpretación de la fórmula). En caso de que una clausula se evalúe como falsa, la solución no la satisface. En el peor caso, hay que llegar hasta el último literal de la última clausula. Además, por cada literal hay que hacer una búsqueda en la solución para asignarle su valor de verdad. El orden peor caso es $O( l*v)$, siendo $l$ la cantidad de literales en toda la fórmula y $v$ la cantidad de variables (distintas). Claramente es una función polinomial. 
+
+\begin{lstlisting}[language=Haskell]
+verifyA :: (DomA, SolA) -> Bool 
+verifyA (lc, s) = foldr (\c b -> or (assignI c s) && b) True lc 
+
+assignI :: [(String, Bool)] -> SolA -> [Bool] 
+assignI ll i = map (\(s,b) -> case lookup s i of { 
+    Nothing -> error "La variable no esta en la interpretacion"; 
+    Just x -> x == b 
+}) ll 
+\end{lstlisting}
+
+Para el verificador de \textbf{B}, lo dividimos para que compruebe el cumplimiento de todas las condiciones que impone el problema. La condición de que empiece y termine en la base de operaciones, queda implícita cuando se calcula el largo de la ruta, que lo hace siempre partiendo y terminando desde la base. Esto tiene sentido porque la solución es el listado de todos los puntos de control, ordenados según se van visitando. Luego se comprueba que la distancia del recorrido no supere la máxima establecida, que la suma de las prioridades de los puntos alcance o supere el valor de prioridad establecido (se visitan todos los puntos, por eso se suma directamente las prioridades de todos los puntos) y que no se pase por ningún camino prohibido, es decir, que se respeten los pares de exclusión. 
+
+Junto a las funciones auxiliares indicamos el costo de cada una, para llegar al costo del verificador componiendo los mismos. Podemos ver que hay una composición de costos polinomiales, por lo que el costo del verificador es polinomial. Para entender mejor los costos, leer desde abajo hacia arriba. 
+
+El costo de ejecución de verifyB puede calcularse como los costos de las 3 llamadas que componen el triple AND, es decir:
+
+$Costo: O(p^3) + O(b) + O(e*lp) = O(p^3)$.
+\begin{lstlisting}[language=Haskell]
+verifyB :: (DomB, SolB) -> Bool 
+verifyB ((ps, d, r, e, b, m, v), lp) = pathDistance d r lp <= m
+    && sum (map snd b) >= v
+    && checkPath e lp 
+\end{lstlisting}
+
+$Costo: O(p^3) $.
+\begin{lstlisting}[language=Haskell]
+pathDistance :: D -> R -> Ps-> Int 
+pathDistance d r lp = getDistanceToBase r (head lp) + innerPathDistance d r lp 
+\end{lstlisting}
+
+
+$Costo: O(p^2)*O(lp)$ siendo $lp$ la cantidad de puntos, entonces $O(p^3) $. 
+
+\begin{lstlisting}[language=Haskell]
+innerPathDistance :: D -> R -> Ps-> Int 
+innerPathDistance d r [p] = getDistanceToBase r p 
+innerPathDistance d r (p:np:ps) = getDistance d p np + innerPathDistance d r (np:ps) 
+\end{lstlisting}
+
+
+ 
+$Costo: O(d)$ siendo $d$ la cantidad de puntos de control al cuadrado, entonces $O(p^2) $.
+\begin{lstlisting}[language=Haskell]
+getDistance :: D -> P -> P -> Int 
+getDistance d pa pb = case lookup (pa, pb) d of { 
+    Nothing -> error "No existe alguno de los puntos"; 
+    Just x -> x 
+} 
+\end{lstlisting}
+
+$Costo: O(r)$ siendo $r$ la cantidad de puntos de control. 
+\begin{lstlisting}[language=Haskell]
+getDistanceToBase :: R -> P -> Int 
+getDistanceToBase r p = case lookup p r of { 
+    Nothing -> error "No existe el punto"; 
+    Just x -> x 
+} 
+\end{lstlisting}
+
+
+ 
+
+$Costo: O(e*lp)$ siendo $e$ el largo de la lista de exclusión y $lp$ la cantidad de puntos de control 
+\begin{lstlisting}[language=Haskell]
+checkPath :: E -> SolB -> Bool 
+checkPath e [p] = True 
+checkPath e (p:np:ps) = not (any (\(pa, pb) -> pa == p && pb == np) e) && checkPath e (np:ps) 
+\end{lstlisting}
+ 
+
+\subsection{Resolución en tiempo exponencial}
+Para la resolución se utilizó fuerza bruta para encontrar todas las posibles soluciones, y verificarlas una a una. 
+\begin{lstlisting}[language=Haskell]
+solveA :: DomA -> SolA 
+solveA f = case find (\s -> verifyA (f, s)) (interpretaciones (literales f)) of { 
+    Nothing -> error "no hay solucion"; 
+    Just x -> x 
+}
+
+literales :: DomA -> [String] 
+literales = foldr literalesAdd [] 
+
+literalesAdd :: [(String, Bool)] -> [String] -> [String] 
+literalesAdd c ls = map fst (filter (\(l,b) -> notElem l ls) c) ++ ls 
+
+interpretaciones :: [String] -> [SolA] 
+interpretaciones [] = [[]] 
+interpretaciones (l:ls) = [(l, False) : x | x <- interpretaciones ls] ++ [(l, True) : x | x <- interpretaciones ls]  
+
+\end{lstlisting}
+
+Para conocer todas las posibles soluciones del problema \textbf{B}, se requiere permutar los puntos de control. Para implementar las permutaciones tomamos como ejemplo el trabajo llamado
+\textit{
+{\href{https://stackoverflow.com/questions/60514699/permutations-in-haskell-involving-list-comprehensions-recursion-and-the-delete }{Permutaciones usando comprensión de listas, recursión y delete.}}}\cite{1}
+
+
+
+\vspace{1em}
+\begin{lstlisting}[language=Haskell]
+solveB :: DomB -> SolB 
+solveB (ps, d, r, e, b, m, v) = case find (\p -> verifyB ((ps, d, r, e, b, m, v), p)) (allPaths ps) of { 
+    Nothing -> error "no hay solucion"; 
+    Just x -> x 
+} 
+
+allPaths :: Ps -> [SolB] 
+allPaths [] = [[]] 
+allPaths ps = [ i:j | i <- ps, j <- allPaths $ delete i ps ] 
+
+\end{lstlisting}
+
+
+\subsection{Reducción polinomial entre problemas}
+
+La estrategia consiste en pasar mediante reducciones conocidas desde SAT hasta TSP, y la reducción de TSP a \textbf{B} la planteamos nosotros. Para demostrar que TSP es reducible a \textbf{B}, tenemos que encontrar una función $f$ que para toda instancia de TSP que decida $True$, corresponda a una instancia de \textbf{B} que decida $True$. De la misma forma, $f$ debe corresponder a toda instancia de TSP que decida $False$, una de B que decida $False$. 
+
+El dominio de TSP, es un grafo completo no dirigido $G$ con $V$ vértices, donde cada arista le corresponde un costo, además se proporciona un valor $M$ y la pregunta de decisión es si existe un camino Hamiltoniano tal que la suma del costo de las aristas es menor o igual a $M$. Podemos mapear $M$ del TSP a $M$ (como límite de distancia) en el problema \textbf{B}. Los vértices $V$ corresponden a los puntos de control $P$, y le sumamos la base como otro vértice del grafo para el problema \textbf{B}, y unimos todos los puntos de control con la base para hacer al grafo completo. El costo de todas las nuevas aristas es 0, para no afectar los resultados provenientes de TSP. Para las prioridades de cada punto, y el valor mínimo de prioridad, tomamos el valor trivial 0. Para las exclusiones de pares tomamos el valor trivial conjunto vacío. De esta forma, podemos observar que cualquier solución del TSP es también una solución de \textbf{B}, y que si TSP no tiene solución, \textbf{B} tampoco la tendrá ya que la condición de encontrar un camino que no supere el valor $M$ no se cumple. 
+
+Es fácil demostrar que la función $f$ es polinómica, porque un grafo se puede representar como una matriz $v*v$, y el costo de copiarla, tomando la cantidad de vértices $V$ es $V^2$. Luego, agregar la base y todas las aristas (una por cada vértice), así como definir las prioridades de cada punto en 0, es de costo $V$ , por lo que $V^2$ + $V$  es $V^2$. Las otras operaciones se realizan en costo 1. Por lo tanto, $f$ tiene costo polinómico. 
+
+Al encontrar una función $f$ que permite mapear el TSP a \textbf{B} en tiempo polinomial, conservando los valores de verdad para cada instancia, nos permite afirmar que reducimos el problema TSP a \textbf{B}. Como ya sabemos que TSP es NP-Completo, por reducirse desde SAT (gracias a Cook-Levin), podemos afirmar que el problema \textbf{B} es NP-Completo. 
+
+Habiendo investigado diversas reducciones entre problemas conocidos que se encuentran publicadas, definimos la estrategia para llegar desde SAT a TSP mediante las siguientes reducciones: $SAT \rightarrow 3-SAT \rightarrow HC \rightarrow TSP$. 
+
+Entre las publicaciones investigadas, encontramos particularmente interesante la Tesis de Masja Bronts, llamada:
+\href{https://fse.studenttheses.ub.rug.nl/11906/1/Masja_Bronts_2014_WB.pdf }{Step-by-step reduction
+from SAT to TSP}. \cite{2} \\
+
+Obtuvimos la reducción de SAT a 3-SAT en \href{https://opendsa-server.cs.vt.edu/ODSA/Books/Everything/html/SAT_to_threeSAT.html}{Reduction of SAT to 3-SAT} \cite{3}. Esta reducción se explica fácilmente aplicando equivalencias lógicas. Se analiza la fórmula en SAT clausula a clausula y se distinguen 4 casos distintos, donde el trivial es cuando la clausula tiene 3 literales. Los otros son cuando tiene 1, 2 y más de 3 literales. Analizar clausula a clausula y aplicar uno de los 4 casos, se resuelve en tiempo polinomial en función del tamaño de la fórmula. 
+
+La reducción de 3-SAT a HC la encontramos en \href{https://opendsa-server.cs.vt.edu/ODSA/Books/Everything/html/threeSAT_to_hamiltonianCycle.html}{Reduction of 3-SAT to Hamiltonian Cycle} \cite{4}. Plantea generar un grafo a partir de las clausulas y las variables que aparecen en la fórmula. El procedimiento consiste en crear filas de nodos, tantas filas como cantidad de variables hay en la fórmula. La cantidad de nodos en cada fila es $3 + 3$ veces la cantidad de clausulas existentes. Luego se crean un nodo por cada clausula, y 2 nodos que sirven como inicio y fin del ciclo. La idea es unir con aristas todos los nodos de las filas, y los extremos de estas filas con los extremos de las filas inmediatas. Los 2 nodos inicio y fin se unen con los extremos de la primera y última fila, respectivamente. Se toma la convención, de que cuando se recorre una fila de izquierda a derecha, es que se está eligiendo o tomando el valor verdadero para esa variable, ocurre lo contrario cuando se recorre de derecha a izquierda. Luego se conectan los nodos de la fila con la clausula donde están presentes, siguiendo un orden que establece que dos nodos consecutivos van a la cláusula correspondiente, y siempre los nodos adyacentes quedan sin conexión con otras clausulas u otras filas. De esta forma es posible recorrer todos los nodos del grafo, visitar una clausula desde la fila de una variable significa que esa variable hace verdadera la clausula (se toma en cuenta el sentido en que se recorre la fila para el valor de verdad que se le asigna a la variable). Crear este grafo es de costo polinomial porque para conocer la cantidad de clausulas y variables hay que recorrer la fórmula, y luego se crea una cantidad fija de nodos en función de la cantidad de cláusulas y variables. 
+
+Por último, para reducir HC a TSP nos basamos en \href{https://opendsa-server.cs.vt.edu/ODSA/Books/Everything/html/hamiltonianCycle_to_TSP.html}{Reduction of Hamiltonian Cycle to Traveling Salesman} \cite{5}. Se crea un nuevo grafo con la misma cantidad de vértices, pero se le agregan las aristas que faltan hasta hacerlo completo. Como en TSP las aristas tienen que tener peso, se define peso 1 para las que ya existían y peso 2 para las nuevas. El valor $M$ de TSP se define como la cantidad de aristas que existían, de este modo cualquier ciclo hamiltoniano existente en el grafo anterior, ahora tiene un costo igual a $M$, porque todas las aristas son de peso 1. Cualquier otro ciclo que no estuviera presente en el grafo anterior, va a exceder el costo $M$ y por lo tanto, no satisface TSP. 
+
+\subsection{Ejemplos de instancias de prueba} 
+
+Para el ejemplo 1, pasamos de una fórmula en SAT a una 3-SAT aplicando la función de reducción. Nos queda: 
+
+\[
+\begin{aligned}
+    SAT: (x_1 \lor \neg x_2 \lor x_3) \land (\neg x_1 \lor x_2 \lor x_3) \land (x_2 \lor x_3)
+\end{aligned}
+\]
+
+\[
+\begin{aligned}
+3-SAT:\ &(x_1 \lor \neg x_2 \lor x_3) \land (\neg x_1 \lor x_2 \lor x_3) \\
+       &\land (x_2 \lor x_3 \lor x_4) \land (x_2 \lor x_3 \lor \neg x_4)
+\end{aligned}
+\] \\
+
+Luego, aplicando los pasos para reducir 3-SAT a HC, llegamos a un grafo así. 
+
+\begin{center}
+\includegraphics[width=0.9\columnwidth]{diag1.png}
+\captionof{figura 1}{ Representación del grafo}
+\label{fig:grafo}
+\end{center}
+
+
+Nótese que en el conteo de nodos, no se incluyen los nodos en color blanco, solo existen para facilitar visualmente cómo funciona la conversión. 
+
+Para pasar a TSP, se mantienen los 68 vértices, las aristas existentes se les asigna costo 1 y se agregan todas las aristas ausentes, con peso 2. 
+
+De esta forma la instancia de \textbf{B} queda determinada: 
+\[
+\begin{aligned}
+DomB = (Ps, D, R, E, B, M, V) 
+\end{aligned}
+\]
+
+Puntos de control: 
+
+$Ps = [P]$ Lista con los 68 vértices, numerados incrementalmente desde 1. \\
+
+Matriz de distancias: 
+
+$D = [((P, P), Int)]$ Entre puntos que estaban conectados en HC, valor 1, en los otros 2. \\
+
+Distancias a la base: 
+
+$R = [(P, Int)]$ Los 68 puntos con distancia 0.\\
+
+Pares de exclusión 
+
+$E = []$ Lista vacía \\
+
+Prioridades de los puntos 
+
+$B = [(P, Int)]$	Los 68 puntos con valor 0.\\ 
+
+Límite de distancia 
+
+$M = 68 $ \\
+
+Prioridad mínima requerida 
+
+$V = 0 $ \\
+
+Para el ejemplo 2, debido a la complejidad que adquiriría el grafo resultante si aplicamos las conversiones desde la fórmula provista, planteamos una fórmula equivalente lógicamente, ya que la variable $x_1$ es la que determina que la fórmula es insatisfacible: 
+\[
+\begin{aligned}
+SAT: (x_1 \lor x_1 \lor x_1) \land (\neg x_1 \lor \neg x_1 \lor \neg x_1)
+\end{aligned}
+\]
+\[
+\begin{aligned}
+3SAT: (x_1 \lor x_1 \lor x_1) \land (\neg x_1 \lor \neg x_1 \lor \neg x_1)
+\end{aligned}
+\]
+ 
+
+De este modo, el grafo del HC resultante es: 
+
+\begin{center}
+\includegraphics[width=0.9\columnwidth]{diag2.png}
+\captionof{figura 2}{ Representación del grafo HC}
+\label{fig:grafo}
+\end{center}
+
+Al completar el grafo con las aristas ausentes con peso 2 para pasar a TSP, y luego de aplicar la conversión al problema \textbf{B} nos queda: 
+\[
+\begin{aligned}
+DomB = (Ps, D, R, E, B, M, V) 
+\end{aligned}
+\]
+
+Puntos de control: 
+
+$Ps = [P]$ Lista con los 13 vértices, numerados incrementalmente desde 1. \\
+
+Matriz de distancias: 
+
+$D = [((P, P), Int)]$ Entre puntos que estaban conectados en HC, valor 1, en los otros 2. \\
+
+Distancias a la base: 
+
+$R = [(P, Int)]$ Los 13 puntos con distancia 0. \\
+
+Pares de exclusión 
+
+$E = []$ Lista vacía \\
+
+Prioridades de los puntos 
+
+$B = [(P, Int)]$	Los 13 puntos con valor 0. \\
+
+Límite de distancia 
+
+$M = 13 $ \\
+
+Prioridad mínima requerida 
+
+$V = 0 $ \\
+
+\section{Verificadores y Reducción en otros modelos }
+
+\subsection{Verificador de SAT en Imp}
+
+Definimos otras funciones en $Imp$ para mejorar la legibilidad. 
+De los parámetros que espera VERIFY, clausulas es una lista de listas de literales y valuacion es una lista de valores valuación. Los constructores para literales y valuacion (entendida como la asignación de un valor de verdad a un literal) son $Lit [entero, booleano]$ y $Valu [entero, booleano]$, respectivamente. Para representar se usan los constructores $S[entero]$ y $O[]$, y para los booleanos, los constructores $False[]$ y $True[]$. 
+
+Junto a cada función definida, se muestra el costo. \\
+
+
+\begin{lstlisting}
+def VERIFY (clausulas, valuacion) return res { 
+    --$O(1)$
+    def asignLit(vl, vv) return res { 
+        case vl of [ 
+            False[] -> case vv of [ 
+                False[] -> res := True[], 
+                True[]  -> res := False[] 
+            ], 
+            True[] -> case vv of [ 
+                False[] -> res := False[], 
+                True[]  -> res := True[] 
+            ] 
+        ] 
+    } 
+    -- $O(n) n=a$, a es un entero
+    def iguales (a, b) return res { 
+        while a is [ 
+            S[x] -> case b of [ 
+                S[y] -> {a, b := x, y}, 
+                O[]  -> a, b := O[], a 
+            ] 
+        ] 
+        case b of [ 
+            S[x] -> res := False[], 
+            O[]  -> res := True[] 
+        ] 
+    } 
+    --$O(n) n=cantidad variables * valor literal$ 
+    def evalLit (l, valuacion) return res { 
+        case l of [ 
+            Lit[x, b] -> { 
+                while valuacion is [ 
+                    [v, vs] -> case v of [ 
+                        Valu[y, bv] -> { 
+                            iguales(x, y) on eq; 
+                            case eq of [ 
+                                False[] -> valuacion := vs, 
+                                True[]  -> {  
+                                    valuacion := [][]; 
+                                    asignLit(b, bv) on res  
+                                } 
+                            ] 
+                        } 
+                    ] 
+                ] 
+            } 
+        ] 
+    } 
+    -- O(n*m) n=|clausulas| m=|literales|^2
+     res := True[]; 
+    while clausulas is [ 
+        [c, cs] -> { 
+            clauSat := False[]; 
+            while c is [ 
+                [l, ls] -> { 
+                    evalLit(l, valuacion) on eval; 
+                    case eval of [ 
+                        False[] -> c := ls, 
+                        True[]  -> clauSat, c := True[], [][] 
+                    ] 
+                } 
+            ]; 
+            case clauSat of [ 
+                False[] -> { clausulas, res := [][], False[] }, 
+                True[]  -> clausulas := cs 
+            ] 
+        } 
+    ] 
+}  
+\end{lstlisting}
+
+Su complejidad temporal entonces es $O(c*l^2)$, siendo $c$ la cantidad de clausulas y $l$ la cantidad de literales. Se trata de una complejidad polinomial. 
+
+\subsection{Verificador de B en $\chi$}
+
+Debido a lo largo que queda el verificador en Chi($\chi$), optamos por usar macros y especificarlas a continuación. Las macros aparecen en mayúsculas y están especificadas en el orden que van apareciendo. También se usaron para operar con naturales las macros infijas $==$, $+$ y $<=$, asumiéndose conocidas. 
+
+\begin{lstlisting}
+veriFyB: λps.λd.λr.λe.λb.λm.λv.λlp.
+(AND ((AND (CHECKPATH e lp)) (PRIORIDADES b v))) (PATHDISTANCE d r lp m)
+
+AND:
+λx.λy.case x of [
+        False -> [] False [],
+        True -> [] y
+        ]
+
+CHECKPATH:
+rec checkPath.λe.λlp.case lp of [
+    : -> [p, ps] case ps of[
+        [] -> [] True [],
+        :  -> [p', ps'] AND (NOEXCLUIDO e p p') (checkPath e ps) 
+    ]
+]
+
+NOEXCLUIDO:
+rec noExcluido.λe.λpa.λpb.case e of [
+    [] -> [] True [],
+    :  -> [ex, exs] case ex of [
+        Excl -> [a, b] case AND (a==pa) (b==pb) of[
+            False -> [] noExcluido exs pa pb,
+            True -> [] False []
+        ]
+    ] 
+]
+
+PRIORIDADES:
+λb.λv.(SUMPRI b) >= v
+
+SUMPRI:
+rec sumpri.λb.case b of [
+    [] -> [] O [],
+    :  -> [p, ps] case p of [
+        Pri -> [punto, prioridad] prioridad + (sumpri ps)
+    ] 
+]
+
+PATHDISTANCE:
+λd.λr.λlp.λm.(DISTANCE d r lp) <= m
+
+DISTANCE:
+λd.λr.λlp.(DISTANCETOBASE r lp) + (INNERDISTANCE d r lp)
+
+DISTANCETOBASE:
+rec distanceToBase.λr.λlp.case lp of [
+    [] -> [] O(),
+    :  -> [p, ps] case r of [
+        [] -> [] O(),
+        :  -> [pr, prs] case pr of [
+            DistB -> [p', d] case p==p' of [
+                False -> [] distanceToBase prs lp,
+                True -> [] D
+            ]
+        ]
+    ]
+]
+
+INNERDISTANCE:
+rec innerDistance.λd.λr.λlp.case lp of [
+    : -> [p, ps] case ps of [
+        [] -> [] DISTANCETOBASE r lp,
+        :  -> [p', ps'] (BUSCARDISTANCIA d p p') + (innerDistance d r ps)
+    ]
+]
+
+BUSCARDISTANCIA:
+rec buscarDistancia.λd.λpa.λpb.case d of [
+    [] -> [] O [],
+    :  -> [dp, dps] case dp of [
+        DistP -> [pad, pbd, dist] case AND (pa==pad) (pb==pbd) of [
+            False -> [] buscarDistancia dps pa pb,
+            True -> [] dist
+        ]
+    ]
+]
+==:
+\end{lstlisting}
+
+\subsection{Codificación de la Reducción en Máquina de Turing}
+
+Para codificar los dominios de los problemas, utilizamos el siguiente alfabeto: 
+
+
+\[
+\begin{aligned}
+\Sigma = \{ \#, CL, FL, P, /, \mid, \& \}  
+\end{aligned}
+\]
+La explicación de la codificación es la siguiente: Una codificación inicia a la derecha del $\#$ donde se encuentra el cabezal al inicio, y se extiende hasta el siguiente $\#$ a la derecha. Las distintas estructuras dentro de un dominio están separadas por $\&$, nótese que el $DomA$ tiene una sola estructura. Los valores se codifican como números enteros, representados por $\texttt{|}$ a razón de un carácter por unidad, la ausencia de caracteres indica el valor 0. En este caso, para representar $strings$ se puede optar por su representación en enteros, o asignar valores enteros en lugar de $strings$ como identificadores, de cualquiera de las dos formas se puede codificar. Los booleanos se representan como 0 el $false$ y 1 el $true$. Para indicar listas, tenemos la marca $CL$ por comienzo de lista, y se extiende hasta $FL$ por fin de lista, los distintos elementos de la lista se separan por $/$. También tenemos la marca $P$ para indicar un par o tupla, los elementos del par están separados por la marca $/$. 
+
+Los datos de entrada son el $DomA$, luego de operar la máquina, el resultado $DomB$ se registra a la derecha del $\#$ que indicaba fin de $DomA$, y el cabezal queda en el $\#$ que indica fin $DomB$. 
+
+A modo de ejemplo, mostramos como se representarían las instancias.
+
+\vspace{1em}
+\textbf{DomA:} \\
+\[
+\begin{aligned}
+(x1 \lor x2) \land (¬x1)  
+\end{aligned}
+\] 
+
+Ejemplo de cinta:
+\begin{center}
+\begin{tabular}{ccccccccccccccccc}
+$\nabla$&   &    &    &  &    &    &    &    &    &    &    &    &    &   &    & \\
+\end{tabular}
+\begin{tabular}{|c|c|c|c|c|c|c|c|c|c|c|}
+\hline
+\# & CL & CL & P & \texttt{|}  & $\backslash$ & \texttt{|}  & $\backslash$ & P & \texttt{|}  & \texttt{|}  \\
+\hline
+\end{tabular}
+
+\vspace{0.5em}
+\textit{(continuación de la misma cinta)}
+\vspace{0.5em}
+
+% ===== SEGUNDA PARTE =====
+
+\begin{tabular}{|c|c|c|c|c|c|c|c|c|c|c|}
+\hline
+$\backslash$ & \texttt{|}  & FL & $\backslash$ & CL & P & \texttt{|}  & $\backslash$ & FL & FL & \# \\
+\hline
+\end{tabular}
+\end{center} 
+\vspace{1em}
+ 
+
+\textbf{DomB:} \\
+
+Puntos de control: 
+
+$Ps = [1]$\\  
+
+Matriz de distancias: 
+
+$D = [((1, 1), 1] $ \\ 
+
+Distancias a la base: 
+
+$R = [(1, 2)] $ \\
+
+Pares de exclusión 
+
+$E = []$ \\ 
+
+Prioridades de los puntos 
+
+$B = [(1, 3)]$ \\ 
+
+Límite de distancia 
+
+$M = 3 $ \\
+
+Prioridad mínima requerida 
+
+$V = 1 $ \\
+
+Ejemplo de cinta:
+
+\begin{center}
+\begin{tabular}{|c|c|c|c|c|c|c|c|c|c|c|c|}
+\hline
+\# & CL & \texttt{|} & FL & \& & CL & P & P & \texttt{|} & $\backslash$ & \texttt{|} & $\backslash$ \\
+\hline
+\end{tabular}
+\vspace{0.5em}
+\textit{(continuación de la misma cinta)}
+\vspace{0.5em}
+\begin{tabular}{|c|c|c|c|c|c|c|c|c|c|c|c|}
+\hline
+\texttt{|} & FL & \& & CL & P & \texttt{|} & $\backslash$ & \texttt{|} & \texttt{|} & FL & \& \\
+\hline
+\end{tabular}
+\vspace{0.5em}
+\textit{(continuación de la misma cinta)}
+\vspace{0.5em}
+\begin{tabular}{|c|c|c|c|c|c|c|c|c|c|c|c|}
+\hline
+% FL & CL P | \ | | | FL & | | | & | #
+\ CL & FL & \& & CL & P & \texttt{|} & $\backslash$ & \texttt{|} & \texttt{|} & \texttt{|} & FL \\
+\hline
+\end{tabular}
+\vspace{0.5em}
+\textit{(continuación de la misma cinta)}
+\vspace{0.5em}
+
+\begin{tabular}{cccccccccc}
+      &    &   &  &    &    &    &    &    &     $\nabla$\\
+\end{tabular}
+\begin{tabular}{|c|c|c|c|c|c|c|c|c|c|c|c|}
+\hline
+% FL & CL P | \ | | | FL & | | | & | #
+\ \& & \texttt{|} & \texttt{|} & \texttt{|} & \& & \texttt{|} & \# \\
+\hline
+\end{tabular}
+\end{center}
+
+
+\begin{thebibliography}{00}
+\bibitem{1} Usuario: dbqp - (03/03/2020). StackOverflow Member [Online] \\Available: \url{https://stackoverflow.com/questions/60514699/permutations-in-haskell-involving-list-comprehensions-recursion-and-the-delete}
+\bibitem{2} Masja Bronts - (01/07/2014). Bachelor Thesis Mathematics of the University of Groningen [PDF] \\Available: \url{https://fse.studenttheses.ub.rug.nl/11906/1/Masja_Bronts_2014_WB.pdf}
+\bibitem{3} Autor Desconocido - (15/10/2025). OpenDSA Data Structures and Algorithms Modules Collection [Online] \\Available: \url{https://opendsa-server.cs.vt.edu/ODSA/Books/Everything/html/SAT_to_threeSAT.html}
+\bibitem{4} Autor Desconocido - (15/10/2025). OpenDSA Data Structures and Algorithms Modules Collection [Online] \\Available: \url{https://opendsa-server.cs.vt.edu/ODSA/Books/Everything/html/threeSAT_to_hamiltonianCycle.html}
+\bibitem{5} Autor Desconocido - (15/10/2025). OpenDSA Data Structures and Algorithms Modules Collection [Online] \\Available: \url{https://opendsa-server.cs.vt.edu/ODSA/Books/Everything/html/hamiltonianCycle_to_TSP.html}
+\end{thebibliography}
+
+\end{document}
+//
