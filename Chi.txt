@@ -75,6 +75,3 @@ rec buscarDistancia.λd.λpa.λpb.case d of [
         ]
     ]
 ]
-
-
-==:
