@@ -1,0 +1,10 @@
+Σ = {#, CL, FL, P, /, |, &}
+
+Los datos string se mapearan como int, sea que se use un numero o que se 
+tome la decision de mapearon a un numero.
+Los numeros se representan con |, quedando el 0 como ausencia de estos.
+Los booleanos tambien se mapean a numero.
+Los otros datos que existen son listas, con  CL para comienzo de lista 
+y FL para fin de lista. Hay pares que se representan con P, sigue el dato / y segundo dato
+Los dominios separan estructuras con &.
+Al finalizar el dominio #. La conversion va despues de #.
