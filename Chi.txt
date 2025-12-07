@@ -1,0 +1,80 @@
+veriFyB: λps.λd.λr.λe.λb.λm.λv.λlp.
+(AND ((AND (CHECKPATH e lp)) (PRIORIDADES b v))) (PATHDISTANCE d r lp m)
+
+AND:
+λx.λy.case x of [
+        False -> [] False [],
+        True -> [] y
+        ]
+
+CHECKPATH:
+rec checkPath.λe.λlp.case lp of [
+    : -> [p, ps] case ps of[
+        [] -> [] True [],
+        :  -> [p', ps'] AND (NOEXCLUIDO e p p') (checkPath e ps) 
+    ]
+]
+
+NOEXCLUIDO:
+rec noExcluido.λe.λpa.λpb.case e of [
+    [] -> [] True [],
+    :  -> [ex, exs] case ex of [
+        Excl -> [a, b] case AND (a==pa) (b==pb) of[
+            False -> [] noExcluido exs pa pb,
+            True -> [] False []
+        ]
+    ] 
+]
+
+PRIORIDADES:
+λb.λv.(SUMPRI b) >= v
+
+SUMPRI:
+rec sumpri.λb.case b of [
+    [] -> [] O [],
+    :  -> [p, ps] case p of [
+        Pri -> [punto, prioridad] prioridad + (sumpri ps)
+    ] 
+]
+
+PATHDISTANCE:
+λd.λr.λlp.λm.(DISTANCE d r lp) <= m
+
+DISTANCE:
+λd.λr.λlp.(DISTANCETOBASE r lp) + (INNERDISTANCE d r lp)
+
+DISTANCETOBASE:
+rec distanceToBase.λr.λlp.case lp of [
+    [] -> [] O(),
+    :  -> [p, ps] case r of [
+        [] -> [] O(),
+        :  -> [pr, prs] case pr of [
+            DistB -> [p', d] case p==p' of [
+                False -> [] distanceToBase prs lp,
+                True -> [] D
+            ]
+        ]
+    ]
+]
+
+INNERDISTANCE:
+rec innerDistance.λd.λr.λlp.case lp of [
+    : -> [p, ps] case ps of [
+        [] -> [] DISTANCETOBASE r lp,
+        :  -> [p', ps'] (BUSCARDISTANCIA d p p') + (innerDistance d r ps)
+    ]
+]
+
+BUSCARDISTANCIA:
+rec buscarDistancia.λd.λpa.λpb.case d of [
+    [] -> [] O [],
+    :  -> [dp, dps] case dp of [
+        DistP -> [pad, pbd, dist] case AND (pa==pad) (pb==pbd) of [
+            False -> [] buscarDistancia dps pa pb,
+            True -> [] dist
+        ]
+    ]
+]
+
+
+==:

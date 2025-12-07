@@ -1,3 +1,8 @@
+-- Clausulas es una lista de listas de literales, valuacion es una lista de valores valuacion
+-- Los constructores para literales y valuacion (entendida como la asignación de un valor de verdad a un literarl)
+-- son Lit[entero, booleano] y Valu[entero, booleano], respectivamente.
+-- Entero son los constructores S[entero] y O[], booleano son los constructores False[] y True[].
+
 def VERIFY (clausulas, valuacion) return res {
     -- O(1)
     def asignLit(vl, vv) return res {
